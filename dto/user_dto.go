@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 // RegisterRequest represents the payload for user registration
 type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
@@ -21,4 +23,12 @@ type SignInRequest struct {
 // SignInResponse represents the response for user sign-in
 type SignInResponse struct {
 	Token string `json:"token"`
+}
+
+type UserResponse struct {
+	ID         int       `json:"id"`          // User ID
+	Name       string    `json:"name"`        // User's name
+	Email      string    `json:"email"`       // User's email
+	ProfileURL string    `json:"profile_url"` // URL of the user's profile picture
+	CreatedAt  time.Time `json:"created_at"`
 }

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/theweird-kid/taste-exch/dto"
@@ -16,7 +17,25 @@ type Handler struct {
 }
 
 func (h *Handler) GetUser(c *gin.Context) {
+	uid, _ := strconv.Atoi(c.Param("id"))
 
+	usrRow, err := h.Queries.GetUserByID(c, int32(uid))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	resp := dto.UserResponse{
+		ID:         int(usrRow.ID),
+		Name:       usrRow.Name,
+		Email:      usrRow.Email,
+		ProfileURL: usrRow.ProfileUrl.String,
+		CreatedAt:  usrRow.CreatedAt,
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *Handler) SignIn(c *gin.Context) {
@@ -192,7 +211,7 @@ func (h *Handler) FavouriteRecipe(c *gin.Context) {
 		return
 	}
 
-	if req.Status == "like" {
+	if req.Status == "favourite" {
 		err := h.Queries.FavouriteRecipe(c, database.FavouriteRecipeParams{
 			UserID:   sql.NullInt32{Int32: int32(uid)},
 			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID)},
@@ -203,7 +222,7 @@ func (h *Handler) FavouriteRecipe(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Recipe favourite successfully"})
 
-	} else if req.Status == "unlike" {
+	} else if req.Status == "unfavourite" {
 		err := h.Queries.UnfavouriteRecipe(c, database.UnfavouriteRecipeParams{
 			UserID:   sql.NullInt32{Int32: int32(uid)},
 			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID)},
