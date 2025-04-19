@@ -8,11 +8,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type DB struct {
-	conn *sql.DB
-}
+var conn *sql.DB
 
-func NewDB(dsn string) (*DB, error) {
+func NewDB(dsn string) (*sql.DB, error) {
 	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
@@ -24,5 +22,9 @@ func NewDB(dsn string) (*DB, error) {
 	}
 
 	log.Println("Database connection established")
-	return &DB{conn: conn}, nil
+	return conn, nil
+}
+
+func Close() {
+	conn.Close()
 }

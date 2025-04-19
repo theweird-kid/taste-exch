@@ -1,8 +1,33 @@
-build:
-	@go build -o bin/main cmd/main.go
-test:
-	@go test -v ./...
-run: build
-	@./bin/main
+# Load environment variables from .env file
+include .env
+export $(shell sed 's/=.*//' .env)
+
+# Variables (optional, if you want to use them in the Makefile)
+DSN := $(DSN)
+
+# Targets
+.PHONY: run
+run:
+	@echo "Running the application with DSN=$(DSN)"
+	go run ./cmd
+
+.PHONY: migrate
 migrate:
-	@cd ./cmd/migrations/schema && goose postgres postgres://postgres:postgres@localhost:5432/taste_db?sslmode=disable up
+	@echo "Running migrations with DSN=$(DSN)"
+	@cd ./cmd/migrations/schema && goose postgres "$(DSN)" up
+
+.PHONY: demigrate
+demigrate:
+	@echo "Running demigrations with DSN=$(DSN)"
+	@cd ./cmd/migrations/schema && goose postgres "$(DSN)" down
+
+
+.PHONY: test
+test:
+	@echo "Running tests with DSN=$(DSN)"
+	go test ./...
+
+.PHONY: clean
+clean:
+	@echo "Cleaning up..."
+	rm -rf ./bin
