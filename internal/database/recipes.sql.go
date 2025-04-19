@@ -91,6 +91,7 @@ func (q *Queries) GetRecipeById(ctx context.Context, id int32) (Recipe, error) {
 
 const getRecipes = `-- name: GetRecipes :many
 SELECT
+    id AS recipe_id,
     title AS recipe_name,
     description AS recipe_description,
     photo_url,
@@ -103,6 +104,7 @@ LIMIT 10 OFFSET $1
 `
 
 type GetRecipesRow struct {
+	RecipeID          int32
 	RecipeName        string
 	RecipeDescription sql.NullString
 	PhotoUrl          sql.NullString
@@ -119,6 +121,59 @@ func (q *Queries) GetRecipes(ctx context.Context, offset int32) ([]GetRecipesRow
 	for rows.Next() {
 		var i GetRecipesRow
 		if err := rows.Scan(
+			&i.RecipeID,
+			&i.RecipeName,
+			&i.RecipeDescription,
+			&i.PhotoUrl,
+			pq.Array(&i.Tags),
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRecipesByUser = `-- name: GetRecipesByUser :many
+SELECT
+    id AS recipe_id,
+    title AS recipe_name,
+    description AS recipe_description,
+    photo_url,
+    tags
+FROM
+    recipes
+WHERE
+    user_id = $1
+ORDER BY
+    created_at DESC
+`
+
+type GetRecipesByUserRow struct {
+	RecipeID          int32
+	RecipeName        string
+	RecipeDescription sql.NullString
+	PhotoUrl          sql.NullString
+	Tags              []string
+}
+
+func (q *Queries) GetRecipesByUser(ctx context.Context, userID sql.NullInt32) ([]GetRecipesByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRecipesByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRecipesByUserRow
+	for rows.Next() {
+		var i GetRecipesByUserRow
+		if err := rows.Scan(
+			&i.RecipeID,
 			&i.RecipeName,
 			&i.RecipeDescription,
 			&i.PhotoUrl,

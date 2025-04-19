@@ -24,6 +24,7 @@ WHERE
 
 -- name: GetRecipes :many
 SELECT
+    id AS recipe_id,
     title AS recipe_name,
     description AS recipe_description,
     photo_url,
@@ -33,3 +34,17 @@ FROM
 ORDER BY
     created_at DESC
 LIMIT 10 OFFSET $1;
+
+-- name: GetRecipesByUser :many
+SELECT
+    id AS recipe_id,
+    title AS recipe_name,
+    description AS recipe_description,
+    photo_url,
+    tags
+FROM
+    recipes
+WHERE
+    user_id = $1
+ORDER BY
+    created_at DESC;

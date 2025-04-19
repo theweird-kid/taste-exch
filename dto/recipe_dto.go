@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/theweird-kid/taste-exch/internal/database"
+
 type NewRecipeRequest struct {
 	UserID       int      `json:"user_id"`      // ID of the user creating the recipe
 	Title        string   `json:"title"`        // Title of the recipe
@@ -25,4 +27,24 @@ type RecipeResponse struct {
 	Difficulty   string   `json:"difficulty"`   // Difficulty level (e.g., "easy", "medium", "hard")
 	Servings     int      `json:"servings"`     // Number of servings
 	PhotoURL     string   `json:"photo_url"`    // URL of the recipe photo
+}
+
+type RecipesResponse struct {
+	Recipes []RecipeResponse `json:recipes`
+}
+
+func RecipeResponseToDto(recipe database.Recipe) *RecipeResponse {
+	return &RecipeResponse{
+		ID:           int(recipe.ID),
+		UserID:       int(recipe.UserID.Int32),
+		Title:        recipe.Title,
+		Description:  recipe.Description.String,
+		Tags:         recipe.Tags,
+		Ingredients:  recipe.Ingredients,
+		Instructions: recipe.Instructions,
+		TotalTime:    int(recipe.TotalTime.Int32),
+		Difficulty:   recipe.Difficulty.String,
+		Servings:     int(recipe.Servings.Int32),
+		PhotoURL:     recipe.PhotoUrl.String,
+	}
 }

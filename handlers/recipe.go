@@ -28,19 +28,7 @@ func (h *Handler) GetRecipe(c *gin.Context) {
 		})
 		return
 	} else {
-		resp := dto.RecipeResponse{
-			ID:           int(recipe.ID),
-			UserID:       int(recipe.UserID.Int32),
-			Title:        recipe.Title,
-			Description:  recipe.Description.String,
-			Tags:         recipe.Tags,
-			Ingredients:  recipe.Ingredients,
-			Instructions: recipe.Instructions,
-			TotalTime:    int(recipe.TotalTime.Int32),
-			Difficulty:   recipe.Difficulty.String,
-			Servings:     int(recipe.Servings.Int32),
-			PhotoURL:     recipe.PhotoUrl.String,
-		}
+		resp := dto.RecipeResponseToDto(recipe)
 
 		c.JSON(http.StatusOK, resp)
 	}
@@ -51,5 +39,35 @@ func (h *Handler) GetFavouriteRecipes(c *gin.Context) {
 }
 
 func (h *Handler) GetMyRecipes(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
 
+	// Type Assert userID
+	uid, ok := userID.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user ID"})
+		return
+	}
+
+	recipes, err := h.Queries.GetRecipesByUser(c, sql.NullInt32{Int32: int32(uid)})
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusOK, gin.H{"message": "No recipes"})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Problem"})
+		return
+	} else {
+		var resp dto.RecipesResponse
+		resp.Recipes = make([]dto.RecipeResponse, 0)
+		// for _, recipe := range recipes {
+		// 	resp.Recipes = append(resp.Recipes, *dto.RecipeResponseToDto(recipe))
+		// }
+
+		c.JSON(http.StatusOK, resp)
+	}
 }
