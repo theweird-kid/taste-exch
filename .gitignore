@@ -1,0 +1,8 @@
+# Ignore .env files
+.env
+
+# Ignore any other environment files (optional)
+*.env
+
+# Ignore backup or temporary files (optional)
+.env.*
