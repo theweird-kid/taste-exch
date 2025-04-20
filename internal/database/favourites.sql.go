@@ -8,6 +8,8 @@ package database
 import (
 	"context"
 	"database/sql"
+
+	"github.com/lib/pq"
 )
 
 const favouriteRecipe = `-- name: FavouriteRecipe :exec
@@ -24,6 +26,55 @@ type FavouriteRecipeParams struct {
 func (q *Queries) FavouriteRecipe(ctx context.Context, arg FavouriteRecipeParams) error {
 	_, err := q.db.ExecContext(ctx, favouriteRecipe, arg.UserID, arg.RecipeID)
 	return err
+}
+
+const getFavouriteRecipes = `-- name: GetFavouriteRecipes :many
+SELECT
+    r.id AS recipe_id,
+    r.title AS recipe_name,
+    r.description AS recipe_description,
+    r.photo_url,
+    r.tags
+FROM recipes r
+JOIN favourites f ON r.id = f.recipe_id
+WHERE f.user_id = $1
+`
+
+type GetFavouriteRecipesRow struct {
+	RecipeID          int32
+	RecipeName        string
+	RecipeDescription sql.NullString
+	PhotoUrl          sql.NullString
+	Tags              []string
+}
+
+func (q *Queries) GetFavouriteRecipes(ctx context.Context, userID sql.NullInt32) ([]GetFavouriteRecipesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFavouriteRecipes, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFavouriteRecipesRow
+	for rows.Next() {
+		var i GetFavouriteRecipesRow
+		if err := rows.Scan(
+			&i.RecipeID,
+			&i.RecipeName,
+			&i.RecipeDescription,
+			&i.PhotoUrl,
+			pq.Array(&i.Tags),
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const unfavouriteRecipe = `-- name: UnfavouriteRecipe :exec

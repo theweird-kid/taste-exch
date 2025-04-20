@@ -10,7 +10,30 @@ import (
 )
 
 func (h *Handler) GetRecipes(c *gin.Context) {
+	pageNo, _ := strconv.Atoi(c.Param("page"))
 
+	recipes, err := h.Queries.GetRecipes(c, int32(10*pageNo))
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNoContent, gin.H{
+			"message": "no more pages",
+		})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server problem",
+		})
+		return
+	}
+
+	// Convert database rows to DTO
+	var resp dto.RecipesResponse
+	resp.Recipes = make([]dto.RecipeResponse, 0, len(recipes))
+	for _, recipe := range recipes {
+		resp.Recipes = append(resp.Recipes, dto.RecipeResponseFromRow(recipe))
+	}
+
+	// Return the response
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *Handler) GetRecipe(c *gin.Context) {
@@ -35,7 +58,34 @@ func (h *Handler) GetRecipe(c *gin.Context) {
 }
 
 func (h *Handler) GetFavouriteRecipes(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
 
+	// Type Assert userID
+	uid, ok := userID.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user ID"})
+		return
+	}
+
+	recipes, err := h.Queries.GetFavouriteRecipes(c, sql.NullInt32{Int32: int32(uid), Valid: true})
+	if err == sql.ErrNoRows {
+		// No recipes found
+		c.JSON(http.StatusOK, dto.RecipesResponse{Recipes: []dto.RecipeResponse{}})
+		return
+	} else if err != nil {
+		// Internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Problem"})
+		return
+	}
+
+	resp := dto.FavouriteRecipeResponseFromRow(recipes)
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *Handler) GetMyRecipes(c *gin.Context) {
@@ -54,20 +104,24 @@ func (h *Handler) GetMyRecipes(c *gin.Context) {
 		return
 	}
 
-	recipes, err := h.Queries.GetRecipesByUser(c, sql.NullInt32{Int32: int32(uid)})
+	recipes, err := h.Queries.GetRecipesByUser(c, sql.NullInt32{Int32: int32(uid), Valid: true})
 	if err == sql.ErrNoRows {
-		c.JSON(http.StatusOK, gin.H{"message": "No recipes"})
+		// No recipes found
+		c.JSON(http.StatusOK, dto.RecipesResponse{Recipes: []dto.RecipeResponse{}})
 		return
 	} else if err != nil {
+		// Internal server error
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Problem"})
 		return
-	} else {
-		var resp dto.RecipesResponse
-		resp.Recipes = make([]dto.RecipeResponse, 0)
-		// for _, recipe := range recipes {
-		// 	resp.Recipes = append(resp.Recipes, *dto.RecipeResponseToDto(recipe))
-		// }
-
-		c.JSON(http.StatusOK, resp)
 	}
+
+	// Convert database rows to DTO
+	var resp dto.RecipesResponse
+	resp.Recipes = make([]dto.RecipeResponse, 0, len(recipes))
+	for _, recipe := range recipes {
+		resp.Recipes = append(resp.Recipes, dto.MyRecipeResponseFromRow(recipe))
+	}
+
+	// Return the response
+	c.JSON(http.StatusOK, resp)
 }

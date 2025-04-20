@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"database/sql"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -162,8 +164,8 @@ func (h *Handler) LikeRecipe(c *gin.Context) {
 
 	if req.Status == "like" {
 		err := h.Queries.LikeRecipe(c, database.LikeRecipeParams{
-			UserID:   sql.NullInt32{Int32: int32(uid)},
-			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID)},
+			UserID:   sql.NullInt32{Int32: int32(uid), Valid: true},
+			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID), Valid: true},
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to like recipe"})
@@ -173,8 +175,8 @@ func (h *Handler) LikeRecipe(c *gin.Context) {
 
 	} else if req.Status == "unlike" {
 		err := h.Queries.UnlikeRecipe(c, database.UnlikeRecipeParams{
-			UserID:   sql.NullInt32{Int32: int32(uid)},
-			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID)},
+			UserID:   sql.NullInt32{Int32: int32(uid), Valid: true},
+			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID), Valid: true},
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unlike recipe"})
@@ -211,10 +213,12 @@ func (h *Handler) FavouriteRecipe(c *gin.Context) {
 		return
 	}
 
+	log.Println(uid, req.RecipeID)
+
 	if req.Status == "favourite" {
 		err := h.Queries.FavouriteRecipe(c, database.FavouriteRecipeParams{
-			UserID:   sql.NullInt32{Int32: int32(uid)},
-			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID)},
+			UserID:   sql.NullInt32{Int32: int32(uid), Valid: true},
+			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID), Valid: true},
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to favourite recipe"})
@@ -256,16 +260,67 @@ func (h *Handler) NewRecipe(c *gin.Context) {
 		return
 	}
 
-	// Bind the request body to the DTO
-	var req dto.NewRecipeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Parse multipart form data
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil { // Limit to 10MB
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form data"})
 		return
 	}
 
-	// Set the user_id in the request
-	req.UserID = uid
+	// Retrieve the file from the form
+	file, fileHeader, err := c.Request.FormFile("photo")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to retrieve file"})
+		return
+	}
+	defer file.Close()
 
+	// Save the file temporarily
+	tempFilePath := "/tmp/" + fileHeader.Filename
+	tempFile, err := os.Create(tempFilePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temporary file"})
+		return
+	}
+	defer tempFile.Close()
+
+	// Copy the uploaded file to the temporary file
+	if _, err := io.Copy(tempFile, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Upload the image to ImgBB
+	photoURL, err := utils.UploadImage(tempFilePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
+		return
+	}
+
+	// Clean up the temporary file
+	if err := os.Remove(tempFilePath); err != nil {
+		log.Printf("Failed to remove temporary file: %v", err)
+	}
+
+	// Bind the other form fields to the DTO
+	var req dto.NewRecipeRequest
+	req.Title = c.PostForm("title")
+	req.Description = c.PostForm("description")
+	req.Tags = c.PostFormArray("tags")
+	req.Ingredients = c.PostFormArray("ingredients")
+	req.Instructions = c.PostFormArray("instructions")
+	req.TotalTime, _ = strconv.Atoi(c.PostForm("total_time"))
+	req.Difficulty = c.PostForm("difficulty")
+	req.Servings, _ = strconv.Atoi(c.PostForm("servings"))
+	req.PhotoURL = photoURL // Set the uploaded photo URL
+	req.UserID = uid        // Set the user ID
+
+	// Validate required fields
+	if req.Title == "" || req.Ingredients == nil || req.Instructions == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		return
+	}
+
+	// Prepare the database parameters
 	recipeParams := database.CreateRecipeParams{
 		UserID:       sql.NullInt32{Int32: int32(req.UserID), Valid: true},
 		Title:        req.Title,
