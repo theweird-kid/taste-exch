@@ -6,3 +6,5 @@
 
 # Ignore backup or temporary files (optional)
 .env.*
+
+docker-compose.yml
