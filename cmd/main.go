@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/theweird-kid/taste-exch/db"
 	"github.com/theweird-kid/taste-exch/handlers"
@@ -12,7 +13,6 @@ import (
 )
 
 func main() {
-	// Load environment variables
 
 	// Get the DSN (Database Source Name) from the environment
 	dsn := os.Getenv("DSN")
@@ -26,6 +26,15 @@ func main() {
 
 	// Create a new Gin server instance
 	r := gin.Default()
+
+	// Set up CORS middleware for local testing
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},                   // Allow requests from localhost:5173
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Allowed HTTP methods
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"}, // Allowed headers
+		ExposeHeaders:    []string{"Content-Length"},                          // Headers exposed to the client
+		AllowCredentials: true,                                                // Allow cookies and credentials
+	}))
 
 	// Initialize the handler with the database
 	handler := &handlers.Handler{

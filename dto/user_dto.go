@@ -26,9 +26,10 @@ type SignInResponse struct {
 }
 
 type UserResponse struct {
-	ID         int       `json:"id"`          // User ID
-	Name       string    `json:"name"`        // User's name
-	Email      string    `json:"email"`       // User's email
-	ProfileURL string    `json:"profile_url"` // URL of the user's profile picture
-	CreatedAt  time.Time `json:"created_at"`
+	ID          int       `json:"id"`          // User ID
+	Name        string    `json:"name"`        // User's name
+	Email       string    `json:"email"`       // User's email
+	ProfileURL  string    `json:"profile_url"` // URL of the user's profile picture
+	CreatedAt   time.Time `json:"created_at"`
+	Description string    `json:"description"`
 }

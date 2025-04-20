@@ -12,30 +12,33 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, name, password, profile_url)
-VALUES ($1, $2, $3, $4)
-RETURNING id, name, email, profile_url, created_at
+INSERT INTO users (email, name, description, password, profile_url)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, name, email, description, profile_url, created_at
 `
 
 type CreateUserParams struct {
-	Email      string
-	Name       string
-	Password   string
-	ProfileUrl sql.NullString
+	Email       string
+	Name        string
+	Description sql.NullString
+	Password    string
+	ProfileUrl  sql.NullString
 }
 
 type CreateUserRow struct {
-	ID         int32
-	Name       string
-	Email      string
-	ProfileUrl sql.NullString
-	CreatedAt  time.Time
+	ID          int32
+	Name        string
+	Email       string
+	Description sql.NullString
+	ProfileUrl  sql.NullString
+	CreatedAt   time.Time
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.Email,
 		arg.Name,
+		arg.Description,
 		arg.Password,
 		arg.ProfileUrl,
 	)
@@ -44,6 +47,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.ID,
 		&i.Name,
 		&i.Email,
+		&i.Description,
 		&i.ProfileUrl,
 		&i.CreatedAt,
 	)
@@ -61,18 +65,29 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, email, password, profile_url, created_at
+SELECT id, name, email, description, password, profile_url, created_at
 FROM users
 WHERE email = $1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+type GetUserByEmailRow struct {
+	ID          int32
+	Name        string
+	Email       string
+	Description sql.NullString
+	Password    string
+	ProfileUrl  sql.NullString
+	CreatedAt   time.Time
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
-	var i User
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Email,
+		&i.Description,
 		&i.Password,
 		&i.ProfileUrl,
 		&i.CreatedAt,
@@ -81,17 +96,18 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, email, profile_url, created_at
+SELECT id, name, email, description, profile_url, created_at
 FROM users
 WHERE id = $1
 `
 
 type GetUserByIDRow struct {
-	ID         int32
-	Name       string
-	Email      string
-	ProfileUrl sql.NullString
-	CreatedAt  time.Time
+	ID          int32
+	Name        string
+	Email       string
+	Description sql.NullString
+	ProfileUrl  sql.NullString
+	CreatedAt   time.Time
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error) {
@@ -101,6 +117,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, er
 		&i.ID,
 		&i.Name,
 		&i.Email,
+		&i.Description,
 		&i.ProfileUrl,
 		&i.CreatedAt,
 	)
@@ -109,18 +126,25 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, er
 
 const updateUser = `-- name: UpdateUser :exec
 UPDATE users
-SET name = COALESCE($1, email),
-    profile_url = COALESCE($2, profile_url)
-WHERE id = $3
+SET name = COALESCE($1, name),
+    description = COALESCE($2, description),
+    profile_url = COALESCE($3, profile_url)
+WHERE id = $4
 `
 
 type UpdateUserParams struct {
-	Name       string
-	ProfileUrl sql.NullString
-	ID         int32
+	Name        string
+	Description sql.NullString
+	ProfileUrl  sql.NullString
+	ID          int32
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.ExecContext(ctx, updateUser, arg.Name, arg.ProfileUrl, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateUser,
+		arg.Name,
+		arg.Description,
+		arg.ProfileUrl,
+		arg.ID,
+	)
 	return err
 }

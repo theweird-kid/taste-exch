@@ -15,4 +15,4 @@ CREATE TABLE IF NOT EXISTS recipes (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS recipes;
+DROP TABLE IF EXISTS recipes CASCADE;

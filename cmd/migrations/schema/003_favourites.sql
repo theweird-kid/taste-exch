@@ -7,4 +7,4 @@ CREATE TABLE favourites (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS favourites;
+DROP TABLE IF EXISTS favourites CASCADE;

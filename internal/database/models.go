@@ -37,10 +37,11 @@ type Recipe struct {
 }
 
 type User struct {
-	ID         int32
-	Name       string
-	Email      string
-	Password   string
-	ProfileUrl sql.NullString
-	CreatedAt  time.Time
+	ID          int32
+	Name        string
+	Description sql.NullString
+	Email       string
+	Password    string
+	ProfileUrl  sql.NullString
+	CreatedAt   time.Time
 }

@@ -30,11 +30,12 @@ func (h *Handler) GetUser(c *gin.Context) {
 	}
 
 	resp := dto.UserResponse{
-		ID:         int(usrRow.ID),
-		Name:       usrRow.Name,
-		Email:      usrRow.Email,
-		ProfileURL: usrRow.ProfileUrl.String,
-		CreatedAt:  usrRow.CreatedAt,
+		ID:          int(usrRow.ID),
+		Name:        usrRow.Name,
+		Email:       usrRow.Email,
+		Description: usrRow.Description.String,
+		ProfileURL:  usrRow.ProfileUrl.String,
+		CreatedAt:   usrRow.CreatedAt,
 	}
 
 	c.JSON(http.StatusOK, resp)
@@ -83,7 +84,13 @@ func (h *Handler) SignIn(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
+		"token":       token,
+		"user_id":     user.ID,
+		"name":        user.Name,
+		"email":       user.Email,
+		"description": user.Description.String,
+		"profile":     user.ProfileUrl.String,
+		"created_at":  user.CreatedAt,
 	})
 }
 
@@ -108,6 +115,7 @@ func (h *Handler) Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to check if user exists",
 		})
+		log.Println(err)
 		return
 	}
 
@@ -120,10 +128,11 @@ func (h *Handler) Register(c *gin.Context) {
 	}
 
 	usr, err := h.Queries.CreateUser(c, database.CreateUserParams{
-		Name:       req.Name,
-		Email:      req.Email,
-		Password:   hashedPass,
-		ProfileUrl: sql.NullString{},
+		Name:        req.Name,
+		Email:       req.Email,
+		Password:    hashedPass,
+		Description: sql.NullString{},
+		ProfileUrl:  sql.NullString{},
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
