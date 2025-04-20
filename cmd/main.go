@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/theweird-kid/taste-exch/db"
 	"github.com/theweird-kid/taste-exch/handlers"
 	"github.com/theweird-kid/taste-exch/internal/database"
@@ -14,10 +13,6 @@ import (
 
 func main() {
 	// Load environment variables
-	err := godotenv.Load()
-	if err != nil {
-		os.Exit(-1)
-	}
 
 	// Get the DSN (Database Source Name) from the environment
 	dsn := os.Getenv("DSN")
