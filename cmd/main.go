@@ -29,11 +29,11 @@ func main() {
 
 	// Set up CORS middleware for local testing
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},                   // Allow requests from localhost:5173
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Allowed HTTP methods
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"}, // Allowed headers
-		ExposeHeaders:    []string{"Content-Length"},                          // Headers exposed to the client
-		AllowCredentials: true,                                                // Allow cookies and credentials
+		AllowOrigins:     []string{"http://localhost:5173", "https://tasteexchange.netlify.app/"}, // Allow requests from localhost:5173
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},                     // Allowed HTTP methods
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},                     // Allowed headers
+		ExposeHeaders:    []string{"Content-Length"},                                              // Headers exposed to the client
+		AllowCredentials: true,                                                                    // Allow cookies and credentials
 	}))
 
 	// Initialize the handler with the database
