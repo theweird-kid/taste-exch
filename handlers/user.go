@@ -237,8 +237,8 @@ func (h *Handler) FavouriteRecipe(c *gin.Context) {
 
 	} else if req.Status == "unfavourite" {
 		err := h.Queries.UnfavouriteRecipe(c, database.UnfavouriteRecipeParams{
-			UserID:   sql.NullInt32{Int32: int32(uid)},
-			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID)},
+			UserID:   sql.NullInt32{Int32: int32(uid), Valid: true},
+			RecipeID: sql.NullInt32{Int32: int32(req.RecipeID), Valid: true},
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unfavourite recipe"})
