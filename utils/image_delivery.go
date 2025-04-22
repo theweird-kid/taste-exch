@@ -8,8 +8,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 const imgbbAPI = "https://api.imgbb.com/1/upload"
@@ -24,10 +22,10 @@ type ImgBBResponse struct {
 
 // UploadImage uploads an image to ImgBB and returns the URL of the uploaded image
 func UploadImage(filePath string) (string, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return "", fmt.Errorf("failed to load .env file: %w", err)
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to load .env file: %w", err)
+	// }
 
 	apiKey := os.Getenv("IMGBB_KEY")
 	if apiKey == "" {
