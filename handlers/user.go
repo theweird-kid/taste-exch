@@ -301,7 +301,7 @@ func (h *Handler) NewRecipe(c *gin.Context) {
 	// Upload the image to ImgBB
 	photoURL, err := utils.UploadImage(tempFilePath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
